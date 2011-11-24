@@ -325,6 +325,7 @@ class Extensions_SeleniumTestCaseTest extends PHPUnit_Extensions_SeleniumTestCas
         $this->click('link=Click here');
         // XXX NEED TO CHECK
         $this->waitForPageToLoad(30000);
+
         $this->assertEquals('Slow Loading Page', $this->getTitle());
 
         $this->close();
@@ -671,5 +672,26 @@ class Extensions_SeleniumTestCaseTest extends PHPUnit_Extensions_SeleniumTestCas
         $this->open($this->url . 'html/test_dummy_page.html');
         $this->store('Dummy Page', 'titleText');
         $this->assertTitle('${titleText}');
+    }
+    
+    public function testCapture()
+    {
+        if (!defined('PHPUNIT_TESTSUITE_EXTENSION_SELENIUM_PATH')) {
+            $this->markTestSkipped("Please define PHPUNIT_TESTSUITE_EXTENSION_SELENIUM_PATH.");
+        }
+    	$this->setCaptureScreenshotOnFailure(true);
+    	$this->setScreenshotPath(PHPUNIT_TESTSUITE_EXTENSION_SELENIUM_PATH);
+    	$this->setScreenshotUrl('http://localhost');
+    	
+    	$expectationException = new PHPUnit_Framework_ExpectationFailedException('testCapture');
+    	try {
+    		$this->onNotSuccessfulTest($expectationException);
+    	} catch (PHPUnit_Framework_ExpectationFailedException $e) {
+            $screenshot = PHPUNIT_TESTSUITE_EXTENSION_SELENIUM_PATH. DIRECTORY_SEPARATOR . $this->testId . '.png';
+    		$this->assertFileExists($screenshot);
+            $this->assertTrue(filesize($screenshot) > 0);
+    		return;
+    	}
+    	$this->fail();
     }
 }

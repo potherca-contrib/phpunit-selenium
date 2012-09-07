@@ -825,6 +825,7 @@ abstract class PHPUnit_Extensions_SeleniumTestCase extends PHPUnit_Framework_Tes
      */
     public function runSelenese($filename)
     {
+    	$isSuite = false;
         $document = PHPUnit_Util_XML::loadFile($filename, TRUE);
         $xpath    = new DOMXPath($document);
         $rows     = $xpath->query('body/table/tbody/tr');
@@ -834,22 +835,30 @@ abstract class PHPUnit_Extensions_SeleniumTestCase extends PHPUnit_Framework_Tes
             $arguments = array();
             $columns   = $xpath->query('td', $row);
 
-            foreach ($columns as $column) {
-                if ($action === NULL) {
-                    $action = PHPUnit_Util_XML::nodeToText($column);
-                } else {
-                    $arguments[] = PHPUnit_Util_XML::nodeToText($column);
-                }
-            }
+			if($isSuite === true) {
+				$link = $columns->item(0)->firstChild->getAttribute('href');
+				$this->runSelenese($suitePath . $link);
+			} else {
+				foreach ($columns as $column) {
+					if ($action === NULL) {
+						$action = PHPUnit_Util_XML::nodeToText($column);
+					} else {
+						$arguments[] = PHPUnit_Util_XML::nodeToText($column);
+					}
+				}
+			}
 
             if (method_exists($this, $action)) {
                 call_user_func_array(array($this, $action), $arguments);
-            } else {
+            } elseif($action === 'Test Suite') {
+				// The loaded file is not a test but a test suite
+				$isSuite = true;
+				$suitePath = dirname($filename). DIRECTORY_SEPARATOR;
+			} else {
                 $this->__call($action, $arguments);
             }
         }
     }
-
     /**
      * Delegate method calls to the driver.
      *
